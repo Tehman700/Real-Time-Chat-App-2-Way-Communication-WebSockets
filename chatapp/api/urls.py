@@ -1,0 +1,15 @@
+from django.urls import path
+from api.views.authentication_views import RegisterAPIView, LoginViewSet, AlreadyExistsAPIView
+from api.views.otp_views import OTP_APIView, OTPVerify_APIView
+from api.views.otp_forgotpwd_views import OTP_ForgotPWD_APIView,OTPVerifyPWD,ChangePasswordAPIView
+
+urlpatterns = [
+    path('register/', RegisterAPIView.as_view(), name='registering'),
+    path('login/', LoginViewSet.as_view({'post': 'create'}), name='login'),
+    path('otpMech/', OTP_APIView.as_view(), name='otpMech'),
+    path('otpVerifyMech/', OTPVerify_APIView.as_view(), name='otpVerifyMech'),
+    path('alreadyexists/', AlreadyExistsAPIView.as_view(), name='alreadyExists'),
+    path('forgotpwdemail/', OTP_ForgotPWD_APIView.as_view(), name='forgotpwdemail'),
+    path('otppwdverify/', OTPVerifyPWD.as_view() , name='otppwdverify'),
+    path('changepwd/', ChangePasswordAPIView.as_view(), name='changepwd'),
+]
