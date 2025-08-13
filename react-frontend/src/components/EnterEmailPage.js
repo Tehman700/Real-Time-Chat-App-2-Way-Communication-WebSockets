@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-
     try {
       const otpsending = await axios.post(
           "http://localhost:8000/api/forgotpwdemail/",
