@@ -52,7 +52,6 @@ function PasswordResetting() {
       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}>
 
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <div style={{
             width: '80px',
