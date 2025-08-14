@@ -85,7 +85,6 @@ class OTPVerifyPWD(APIView):
                 "data": None,
             }, status=200)
 
-
 class ChangePasswordAPIView(APIView):
     def post(self, request):
         email = request.data.get("email")
