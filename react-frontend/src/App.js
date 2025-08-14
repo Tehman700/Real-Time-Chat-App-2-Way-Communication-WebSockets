@@ -75,7 +75,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/verification"
             element={
