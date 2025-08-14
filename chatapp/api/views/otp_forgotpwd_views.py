@@ -90,7 +90,6 @@ class OTPVerifyPWD(APIView):
 
 
 
-
 class ChangePasswordAPIView(APIView):
     def post(self, request):
         email = request.data.get("email")
