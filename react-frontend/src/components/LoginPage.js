@@ -23,8 +23,7 @@ export default function LoginPage() {
 
       if (isSuccess && response.data.data?.tokens?.access){
         localStorage.setItem("token", response.data.data.tokens.access);
-        login(); // Mark as logged in this session
-        console.log("Token is: ", response.data.data.tokens.access);
+        login();
         alert("Login Success");
         navigate("/dashboard");
 

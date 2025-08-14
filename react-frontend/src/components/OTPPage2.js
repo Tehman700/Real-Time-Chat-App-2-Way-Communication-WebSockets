@@ -52,7 +52,6 @@ export default function OTPPage2() {
         navigate("/login")
       }
     } catch (err) {
-      console.error(err);
       alert("An error occurred during verification");
       sessionStorage.removeItem("PasswordResetInProgress");
       navigate("/login")

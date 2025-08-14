@@ -30,7 +30,6 @@ export default function RegisterPage() {
           alert("OTP sending failed in backend");
           navigate("/login")
         }
-
     }catch (err) {
         console.error(err);
         alert("An error occurred while sending OTP");

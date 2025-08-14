@@ -15,8 +15,6 @@ function PasswordResetting() {
           alert("Passwords do not match!");
           return;
       }
-      console.log("New Password:", password);
-      console.log("Email is: ", email);
 
       const altering = await axios.post("http://localhost:8000/api/changepwd/", {
           email: email,
