@@ -23,8 +23,11 @@ export default function LoginPage() {
 
       if (isSuccess && response.data.data?.tokens?.access){
         localStorage.setItem("token", response.data.data.tokens.access);
+          localStorage.setItem("username", username);
+
         login();
         alert("Login Success");
+
         navigate("/dashboard");
 
       }
