@@ -15,6 +15,5 @@ urlpatterns = [
     path('changepwd/', ChangePasswordAPIView.as_view(), name='changepwd'),
 
 
-
     path('listusername/',  ListUsernameAPIView.as_view(), name='listusername'),
 ]
