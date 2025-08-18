@@ -15,7 +15,6 @@ urlpatterns = [
     path('otppwdverify/', OTPVerifyPWD.as_view() , name='otppwdverify'),
     path('changepwd/', ChangePasswordAPIView.as_view(), name='changepwd'),
 
-
     path('listusername/',  ListUsernameAPIView.as_view(), name='listusername'),
     path("friend-request/<int:user_id>/", send_friend_request),
     path("friend-request/respond/<int:request_id>/", respond_friend_request),
