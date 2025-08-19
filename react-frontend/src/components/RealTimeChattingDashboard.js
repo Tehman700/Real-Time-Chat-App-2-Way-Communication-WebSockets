@@ -15,9 +15,7 @@ export default function RealTimeChattingDashboard() {
   }, []);
 
 
-
-
-
+    // This is for the fetching username
    useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) {
