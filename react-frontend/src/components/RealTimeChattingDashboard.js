@@ -24,7 +24,6 @@ export default function RealTimeChattingDashboard() {
     }
   }, []);
 
-
   useEffect(() => {
     if (!group) return;
 
