@@ -4,6 +4,7 @@ from api.views.otp_views import OTP_APIView, OTPVerify_APIView
 from api.views.otp_forgotpwd_views import OTP_ForgotPWD_APIView,OTPVerifyPWD,ChangePasswordAPIView
 from api.views.list_usernames import ListUsernameAPIView
 from api.views.friend_requests_views import send_friend_request,respond_friend_request
+from api.views.chatting_views import ChatGroupAPIView, CreateChatGroupAPIView
 
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='registering'),
@@ -18,4 +19,8 @@ urlpatterns = [
     path('listusername/',  ListUsernameAPIView.as_view(), name='listusername'),
     path("friend-request/<int:user_id>/", send_friend_request),
     path("friend-request/respond/<int:request_id>/", respond_friend_request),
+
+    path('groups/', ChatGroupAPIView.as_view(), name="chat-groups"),
+    path('create-group/', CreateChatGroupAPIView.as_view(), name="create-group"),
+
 ]

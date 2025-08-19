@@ -7,7 +7,8 @@ import OTPPage from "./components/OTPPage"
 import EnterEmailPage from "./components/EnterEmailPage"
 import OTPPage2 from "./components/OTPPage2";
 import PasswordResetting from "./components/PasswordResetting";
-
+import RoomsDashboard from "./components/RoomsDashboard";
+import RealTimeChattingDashboard from "./components/RealTimeChattingDashboard"
 
 
 
@@ -75,6 +76,26 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/rooms-dashboard"
+            element={
+              <ProtectedRoute>
+                <RoomsDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/real-time-chat"
+            element={
+              <ProtectedRoute>
+                <RealTimeChattingDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+
           <Route
             path="/verification"
             element={

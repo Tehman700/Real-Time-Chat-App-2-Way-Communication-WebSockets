@@ -6,11 +6,12 @@ import axios from "axios";
 export default function ChatDashboard() {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [showRequests, setShowRequests] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [friendStatuses, setFriendStatuses] = useState({}); // Track friend request/connection status
+  const [friendStatuses, setFriendStatuses] = useState({});
 
   // Get logged-in username
   useEffect(() => {
@@ -37,7 +38,49 @@ export default function ChatDashboard() {
       });
   }, []);
 
-  // Fetch friend statuses (you'll need to create this API endpoint)
+    useEffect(() => {
+      const savedStatuses = localStorage.getItem('friendStatuses');
+      if (savedStatuses) {
+        setFriendStatuses(JSON.parse(savedStatuses));
+      }
+    }, []);
+
+    // Save friend statuses to localStorage whenever they change
+    useEffect(() => {
+      if (Object.keys(friendStatuses).length > 0) {
+        localStorage.setItem('friendStatuses', JSON.stringify(friendStatuses));
+      }
+    }, [friendStatuses]);
+
+  // Fetch friend statuses
+    useEffect(() => {
+      const savedNotifications = localStorage.getItem('notifications');
+      if (savedNotifications) {
+        setNotifications(JSON.parse(savedNotifications));
+      }
+    }, []);
+        useEffect(() => {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    }, [notifications]);
+
+    // Add this useEffect to refresh data from server periodically
+    useEffect(() => {
+      if (username) {
+        // Refresh friend statuses from server
+        const token = localStorage.getItem("token");
+        axios
+          .get("http://127.0.0.1:8000/api/friend-status/", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          .then((response) => {
+            setFriendStatuses(response.data || {});
+          })
+          .catch((error) => {
+            console.error("Error syncing friend statuses:", error);
+          });
+      }
+    }, [username]);
+
   useEffect(() => {
     if (users.length > 0) {
       const token = localStorage.getItem("token");
@@ -48,7 +91,6 @@ export default function ChatDashboard() {
           },
         })
         .then((response) => {
-          // Assuming response.data contains friend statuses
           setFriendStatuses(response.data || {});
         })
         .catch((error) => {
@@ -72,7 +114,6 @@ export default function ChatDashboard() {
       const data = JSON.parse(event.data);
       console.log("📩 Notification received:", data);
 
-      // Add new notification to state
       const notification = {
         ...data,
         id: data.request_id || Date.now(),
@@ -98,12 +139,9 @@ export default function ChatDashboard() {
       }
     };
 
-    socket.onclose = () => {
-      console.log("❌ WebSocket disconnected");
-    };
 
     socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
+      alert("Websocket Error", error);
     };
 
     return () => socket.close();
@@ -124,7 +162,6 @@ export default function ChatDashboard() {
       )
       .then(() => {
         alert(`Friend request sent to ${friendUsername}!`);
-        // Update local status to pending
         setFriendStatuses(prev => ({
           ...prev,
           [friendUsername]: "pending_sent"
@@ -155,10 +192,7 @@ export default function ChatDashboard() {
       )
       .then(() => {
         alert(`Friend request ${action}ed`);
-        // Remove handled request from notifications
         setNotifications((prev) => prev.filter((n) => n.id !== reqId));
-
-        // Update friend status
         setFriendStatuses(prev => ({
           ...prev,
           [fromUsername]: action === "accept" ? "connected" : "none"
@@ -224,7 +258,9 @@ export default function ChatDashboard() {
     localStorage.removeItem("token");
     navigate("/login");
   };
-
+  const JoinRoom = async () => {
+    navigate("/rooms-dashboard")
+  };
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
       {/* Top Bar */}
@@ -245,10 +281,13 @@ export default function ChatDashboard() {
         </h2>
 
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-          {/* Bell Icon */}
+          {/* Notifications Bell Icon */}
           <div
             style={{ position: "relative", cursor: "pointer", fontSize: "20px" }}
-            onClick={() => setShowRequests(!showRequests)}
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setShowUsers(false); // Close users dropdown
+            }}
           >
             🔔
             {notifications.length > 0 && (
@@ -268,7 +307,7 @@ export default function ChatDashboard() {
               </span>
             )}
 
-            {showRequests && (
+            {showNotifications && (
               <div
                 style={{
                   position: "absolute",
@@ -362,6 +401,110 @@ export default function ChatDashboard() {
             )}
           </div>
 
+          {/* Users Button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => {
+                setShowUsers(!showUsers);
+                setShowNotifications(false); // Close notifications dropdown
+              }}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#17a2b8",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              👥 Users
+            </button>
+
+            {showUsers && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "40px",
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                  padding: "10px",
+                  minWidth: "300px",
+                  zIndex: 10,
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                }}
+              >
+                <p style={{ margin: "0 0 10px", fontWeight: "bold" }}>
+                  All Users
+                </p>
+                {users.length === 0 ? (
+                  <p style={{ color: "#666", fontStyle: "italic" }}>Loading users...</p>
+                ) : (
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {users
+                    .filter((user) => {
+                        const userUsername = typeof user === 'string' ? user : user.username;
+                        const adminUsernames = ['admin', 'administrator', 'root', 'superuser']; // Add more admin usernames as needed
+                        return userUsername !== username && !adminUsernames.includes(userUsername.toLowerCase());
+                      })
+                      .map((user, index) => {
+                        const userUsername = typeof user === 'string' ? user : user.username;
+                        const userId = typeof user === 'string' ? null : user.id;
+                        const buttonConfig = getButtonConfig(userUsername);
+
+                        return (
+                          <li
+                            key={index}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "8px",
+                              borderBottom: "1px solid #eee",
+                              marginBottom: "5px",
+                            }}
+                          >
+                            <div>
+                              <span style={{ fontWeight: "500", fontSize: "14px" }}>
+                                {userUsername}
+                              </span>
+                              {friendStatuses[userUsername] === "connected" && (
+                                <span style={{
+                                  marginLeft: "8px",
+                                  fontSize: "10px",
+                                  color: "#28a745",
+                                  fontWeight: "bold"
+                                }}>
+                                  ✓ Friends
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => !buttonConfig.disabled && handleConnect(userId || userUsername, userUsername)}
+                              disabled={buttonConfig.disabled || (!userId && typeof user === 'string')}
+                              style={{
+                                padding: "4px 8px",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                ...buttonConfig.style
+                              }}
+                            >
+                              {buttonConfig.text}
+                            </button>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}
@@ -376,77 +519,24 @@ export default function ChatDashboard() {
           >
             Logout
           </button>
+
+          <button onClick={JoinRoom}
+           style={{
+              padding: "8px 16px",
+              backgroundColor: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}>Join Room</button>
+
         </div>
       </div>
 
-      {/* Content */}
-      <p style={{ color: "#555" }}>
-        Welcome to your dashboard! You can connect with other users below.
-      </p>
-
-      {/* Show user list with connect button */}
-      <div style={{ marginTop: "20px" }}>
-        <h3>All Users</h3>
-        {users.length === 0 ? (
-          <p style={{ color: "#666", fontStyle: "italic" }}>Loading users...</p>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {users
-              .filter((user) => {
-                const userUsername = typeof user === 'string' ? user : user.username;
-                return userUsername !== username;
-              })
-              .map((user, index) => {
-                const userUsername = typeof user === 'string' ? user : user.username;
-                const userId = typeof user === 'string' ? null : user.id;
-                const buttonConfig = getButtonConfig(userUsername);
-
-                return (
-                  <li
-                    key={index}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px",
-                      borderBottom: "1px solid #eee",
-                      backgroundColor: "#f9f9f9",
-                      marginBottom: "5px",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    <div>
-                      <span style={{ fontWeight: "500" }}>{userUsername}</span>
-                      {friendStatuses[userUsername] === "connected" && (
-                        <span style={{
-                          marginLeft: "10px",
-                          fontSize: "12px",
-                          color: "#28a745",
-                          fontWeight: "bold"
-                        }}>
-                          ✓ Friends
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => !buttonConfig.disabled && handleConnect(userId || userUsername, userUsername)}
-                      disabled={buttonConfig.disabled || (!userId && typeof user === 'string')}
-                      style={{
-                        padding: "6px 12px",
-                        border: "none",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        ...buttonConfig.style
-                      }}
-                    >
-                      {buttonConfig.text}
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
-}
+    {/* Content */}
+         <div style={{ textAlign: "center", marginTop: "50px" }}>
+           <h1 style={{ color: "#333" }}>Welcome to your Chat Dashboard!</h1>
+         </div>
+       </div>
+     );
+    }
