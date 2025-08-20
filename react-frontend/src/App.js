@@ -11,8 +11,6 @@ import RoomsDashboard from "./components/RoomsDashboard";
 import RealTimeChattingDashboard from "./components/RealTimeChattingDashboard"
 
 
-
-// Create context for tracking login state
 const AuthContext = createContext();
 
 // Custom hook to use auth context

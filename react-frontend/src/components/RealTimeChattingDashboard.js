@@ -1,32 +1,34 @@
 import { useEffect, useState } from "react";
 
+
 export default function RealTimeChattingDashboard() {
   const [group, setGroup] = useState("");
   const [ws, setWs] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [username, setUsername] = useState("");
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [showUsersDropdown, setShowUsersDropdown] = useState(false);
 
+  // This is for the Name of group to display on top
   useEffect(() => {
     const storedGroup = sessionStorage.getItem("group");
-    if (storedGroup) {
-      setGroup(storedGroup);
-    }
+    if (storedGroup) setGroup(storedGroup);
   }, []);
 
-
-    // This is for the fetching username and using it later
-   useEffect(() => {
+  // This is for the Username of current user logged in
+  useEffect(() => {
     const storedUsername = localStorage.getItem("username");
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
+    if (storedUsername) setUsername(storedUsername);
   }, []);
 
+  // WebSocket connection for real-time chatting
   useEffect(() => {
     if (!group) return;
 
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${group}/`);
+    const token = localStorage.getItem("token"); // JWT token
+    // Group is basically room name
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${group}/?token=${token}`);
 
     socket.onopen = () => console.log("Connected to room", group);
     socket.onclose = () => console.log("Disconnected from room", group);
@@ -34,99 +36,183 @@ export default function RealTimeChattingDashboard() {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.message) {
-        setMessages((prev) => [...prev, { text: data.message, sender: "other" }]);
+
+      if (data.type === "chat") {
+        // Chat message received
+        setMessages((prev) => [...prev, { text: data.message, sender: data.sender }]);
+      } else if (data.type === "users") {
+        // Online users list
+        setOnlineUsers(data.users);
       }
     };
 
     setWs(socket);
 
-    return () => {
-      socket.close();
-    };
+    return () => socket.close();
   }, [group]);
 
-  const sendMessage = () => {
-    if (ws && message.trim() !== "") {
-      ws.send(JSON.stringify({ message }));
-      setMessages((prev) => [...prev, { text: message, sender: "me" }]);
-      setMessage(""); // clear input
-    }
-  };
+const sendMessage = () => {
+  if (ws && message.trim() !== "") {
+    ws.send(JSON.stringify({ message }));
+    setMessage("");
+  }
+};
 
   return (
-    <div style={{ maxWidth: "600px", margin: "auto", padding: "20px" }}>
-      <h2>Real-Time Chat Dashboard</h2>
-      {group ? (
-        <>
-          <p>
-            You're in room: <strong>{group}, {username}</strong>
-          </p>
+    <div style={{ maxWidth: "700px", margin: "auto", padding: "20px" }}>
+      {/* 🔹 Navbar */}
+      <nav
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px 20px",
+          backgroundColor: "#1e3a8a",
+          color: "white",
+          borderRadius: "8px",
+          marginBottom: "20px",
+        }}
+      >
+        <h2>Room: {group}</h2>
 
-          {/* Chat Messages */}
+        <div style={{ position: "relative" }}>
           <div
             style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "10px",
-              height: "300px",
-              overflowY: "auto",
-              marginBottom: "10px",
-              backgroundColor: "#f9f9f9",
+              cursor: "pointer",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "#3b82f6",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontSize: "18px",
+              fontWeight: "bold",
             }}
+            onClick={() => setShowUsersDropdown((prev) => !prev)}
           >
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                style={{
-                  textAlign: msg.sender === "me" ? "right" : "left",
-                  margin: "5px 0",
-                }}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    padding: "8px 12px",
-                    borderRadius: "16px",
-                    backgroundColor: msg.sender === "me" ? "#007bff" : "#e5e5ea",
-                    color: msg.sender === "me" ? "white" : "black",
-                  }}
-                >
-                  {username, msg.text}
-                </span>
-              </div>
-            ))}
+            👤
           </div>
 
-          {/* Input & Button */}
-          <div style={{ display: "flex", gap: "10px" }}>
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type a message..."
-              style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid #ccc" }}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            />
-            <button
-              onClick={sendMessage}
+          {showUsersDropdown && (
+            <div
               style={{
-                padding: "10px 20px",
-                borderRadius: "8px",
-                border: "none",
-                backgroundColor: "#007bff",
-                color: "white",
-                cursor: "pointer",
+                position: "absolute",
+                right: 0,
+                marginTop: "10px",
+                width: "220px",
+                background: "white",
+                borderRadius: "10px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                padding: "10px",
+                zIndex: 10,
               }}
             >
-              Send
-            </button>
+              <h4 style={{ fontSize: "14px", fontWeight: "600", marginBottom: "8px", color: "#333" }}>
+                Online Users
+              </h4>
+              {onlineUsers.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "#666" }}>No users online</p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {onlineUsers.map((user, idx) => (
+                        <li key={idx} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: "14px" }}>
+                          <span
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              backgroundColor: "limegreen", // dot color
+                              display: "inline-block",
+                              marginRight: "8px",
+                            }}
+                          ></span>
+                          <span style={{ color: user === username ? "#007bff" : "#555" }}>
+                            {user === username ? "You" : user}
+                          </span>
+                        </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Chat Messages */}
+      <div
+        style={{
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          padding: "10px",
+          height: "300px",
+          overflowY: "auto",
+          marginBottom: "10px",
+          backgroundColor: "#f9f9f9",
+        }}
+      >
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              textAlign: msg.sender === username ? "right" : "left",
+              margin: "5px 0",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: msg.sender === username ? "#007bff" : "#333",
+                marginBottom: "2px",
+              }}
+            >
+              {msg.sender === username ? "You" : msg.sender}
+            </div>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "8px 12px",
+                borderRadius: "16px",
+                backgroundColor: msg.sender === username ? "#007bff" : "#e5e5ea",
+                color: msg.sender === username ? "white" : "black",
+              }}
+            >
+              {msg.text}
+            </span>
           </div>
-        </>
-      ) : (
-        <p>No room selected.</p>
-      )}
+        ))}
+      </div>
+
+      {/* Input & Send */}
+      <div style={{ display: "flex", gap: "10px" }}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type a message..."
+          style={{
+            flex: 1,
+            padding: "10px",
+            borderRadius: "8px",
+            border: "1px solid #ccc",
+          }}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+        />
+        <button
+          onClick={sendMessage}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#007bff",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
-
 }

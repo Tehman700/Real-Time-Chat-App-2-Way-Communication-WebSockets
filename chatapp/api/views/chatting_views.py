@@ -30,4 +30,3 @@ class CreateChatGroupAPIView(APIView):
 
         return JsonResponse({"status": 0,"message": "Group created", "group": {"group_name": chat_group.group_name}}, status=status.HTTP_201_CREATED)
 
-

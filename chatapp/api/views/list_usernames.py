@@ -15,3 +15,20 @@ class ListUsernameAPIView(APIView):
             "message": "Welcome to Chat App using Websockets",
             "data": users
         }, status=200)
+
+
+
+class LoggedInUserEmailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user  # the authenticated user
+
+        return JsonResponse({
+            "message": "Fetched logged in user email successfully",
+            "data": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+            }
+        }, status=200)
