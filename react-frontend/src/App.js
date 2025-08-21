@@ -22,7 +22,6 @@ export const useAuth = () => {
   }
   return context;
 };
-
 function ProtectedRoute({ children }) {
   const { isLoggedInThisSession } = useAuth();
   const token = localStorage.getItem("token");
