@@ -30,7 +30,6 @@ function ProtectedRoute({ children }) {
   if (!token || !isLoggedInThisSession) {
     return <Navigate to="/login" replace />;
   }
-
   return children;
 }
 
