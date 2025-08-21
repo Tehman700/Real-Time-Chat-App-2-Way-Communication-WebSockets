@@ -11,7 +11,6 @@ import RoomsDashboard from "./components/RoomsDashboard";
 import RealTimeChattingDashboard from "./components/RealTimeChattingDashboard"
 import OnetoOneChat from "./components/OnetoOneChat"
 import OnetoOneChatDashboard from "./components/OnetoOneChatDashboard"
-import Fucking from "./components/Fucking"
 
 const AuthContext = createContext();
 
@@ -76,16 +75,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="/fucking"
-            element={
-              <ProtectedRoute>
-                <Fucking />
-              </ProtectedRoute>
-            }
-          />
-
 
           <Route
             path="/rooms-dashboard"
