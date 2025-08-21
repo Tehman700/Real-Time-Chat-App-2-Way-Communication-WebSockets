@@ -22,5 +22,4 @@ urlpatterns = [
     path("friend-request/respond/<int:request_id>/", respond_friend_request),
     path('groups/', ChatGroupAPIView.as_view(), name="chat-groups"),
     path('create-group/', CreateChatGroupAPIView.as_view(), name="create-group"),
-
 ]

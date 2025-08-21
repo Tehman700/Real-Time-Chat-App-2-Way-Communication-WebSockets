@@ -25,6 +25,9 @@ export default function LoginPage() {
         localStorage.setItem("token", response.data.data.tokens.access);
           localStorage.setItem("username", username);
 
+
+
+
         login();
         alert("Login Success");
 

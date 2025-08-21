@@ -12,7 +12,6 @@ User = get_user_model()
 
 class ChattingConsumer(AsyncConsumer):
     async def websocket_connect(self, event):
-        print("WebSocket connected:", event)
 
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"{self.room_name}"

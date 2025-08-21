@@ -197,6 +197,10 @@ export default function ChatDashboard() {
       alert("Websocket Error", error);
     };
 
+    const connectedFriends = Object.entries(friendStatuses)
+      .filter(([username, status]) => status === 'connected')
+      .map(([username]) => username);
+
     return () => socket.close();
   }, [username]);
 

@@ -9,24 +9,31 @@ export default function RoomsDashboard() {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [username, setUsername] = useState("");
 
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState({
     username: "",
     profilePic: null
   });
 
+// This is only for user online checking
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const socket = new WebSocket(`ws://localhost:8000/ws/presence/?token=${token}`);
+    if (!token) {
+      console.error("No JWT token found. Please login first.");
+      return;
+    }
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "users") {
-        setOnlineUsers(data.users);
-      }
+    const ws = new WebSocket(`ws://localhost:8000/ws/online-users/?token=${token}`);
+
+    ws.onopen = () => console.log("Connected to websocket");
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      setOnlineUsers(data.online_users);
     };
+    ws.onclose = () => console.log("Disconnected");
 
-    return () => socket.close();
+    return () => ws.close();
   }, []);
 
   useEffect(() => {
@@ -119,121 +126,148 @@ export default function RoomsDashboard() {
     // Here will be the all logic for the chatting in websockets
   };
 
-  return (
-    <div style={{ minHeight: "100vh", background: "#f4f6f9" }}>
-      {/* 🔹 Navbar */}
-      <nav
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "15px 30px",
-          background: "#1e3a8a",
-          color: "white",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-        }}
-      >
-        <h1 style={{ fontSize: "20px", fontWeight: "bold" }}>Chat Dashboard</h1>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          {/* 🔹 Current User Info */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <img
-              src={userProfile.profilePic || "/default-avatar.png"}
-              alt="Profile"
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "2px solid white",
-              }}
-            />
-            <span style={{ fontWeight: "600", fontSize: "16px" }}>
-              {username || "User"}
-            </span>
+    const handleOneToOneChat = () => {
+      navigate("/onetoone");
+    };
+
+
+
+
+
+
+return (
+  <div style={{ minHeight: "100vh", background: "#f4f6f9" }}>
+    {/* 🔹 Navbar */}
+    <nav
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "15px 30px",
+        background: "#1e3a8a",
+        color: "white",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      }}
+    >
+      <h1 style={{ fontSize: "20px", fontWeight: "bold" }}>Chat Dashboard</h1>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        {/* 🔹 One-to-One Chat Button */}
+        <button
+          onClick={handleOneToOneChat}
+          style={{
+            padding: "8px 15px",
+            borderRadius: "8px",
+            border: "none",
+            background: "#f59e0b",
+            color: "white",
+            fontWeight: "600",
+            cursor: "pointer",
+          }}
+        >
+          One-to-One Chat
+        </button>
+
+        {/* 🔹 Current User Info */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <img
+            src={userProfile.profilePic || "/default-avatar.png"}
+            alt="Profile"
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: "2px solid white",
+            }}
+          />
+          <span style={{ fontWeight: "600", fontSize: "16px" }}>
+            {username || "User"}
+          </span>
+        </div>
+
+        {/* 🔹 Online Users Dropdown */}
+        <div style={{ position: "relative" }}>
+          <div
+            style={{
+              cursor: "pointer",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: "#3b82f6",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontSize: "18px",
+              fontWeight: "bold",
+            }}
+            onClick={() => setShowDropdown((prev) => !prev)}
+          >
+            👤
           </div>
 
-          {/* 🔹 Online Users Dropdown */}
-          <div style={{ position: "relative" }}>
+          {showDropdown && (
             <div
               style={{
-                cursor: "pointer",
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "#3b82f6",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                fontSize: "18px",
-                fontWeight: "bold",
+                position: "absolute",
+                right: 0,
+                marginTop: "10px",
+                width: "220px",
+                background: "white",
+                borderRadius: "10px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                padding: "10px",
+                zIndex: 10,
               }}
-              onClick={() => setShowDropdown((prev) => !prev)}
             >
-              👤
-            </div>
-
-            {showDropdown && (
-              <div
+              <h3
                 style={{
-                  position: "absolute",
-                  right: 0,
-                  marginTop: "10px",
-                  width: "220px",
-                  background: "white",
-                  borderRadius: "10px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  padding: "10px",
-                  zIndex: 10,
+                  fontSize: "14px",
+                  marginBottom: "10px",
+                  fontWeight: "600",
+                  color: "#333",
                 }}
               >
-                <h3
-                  style={{
-                    fontSize: "14px",
-                    marginBottom: "10px",
-                    fontWeight: "600",
-                    color: "#333",
-                  }}
-                >
-                  Online Users
-                </h3>
-                {onlineUsers.length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "#666" }}>No users online</p>
-                ) : (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                    {onlineUsers.map((user, idx) => (
-                      <li
-                        key={idx}
+                Online Users
+              </h3>
+              {onlineUsers.length === 0 ? (
+                <p style={{ fontSize: "13px", color: "#666" }}>
+                  No users online
+                </p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {onlineUsers.map((user, idx) => (
+                    <li
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "5px 0",
+                        fontSize: "14px",
+                        color: "#444",
+                      }}
+                    >
+                      <span
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "5px 0",
-                          fontSize: "14px",
-                          color: "#444",
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "green",
+                          display: "inline-block",
+                          marginRight: "8px",
                         }}
-                      >
-                        <span
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            background: "green",
-                            display: "inline-block",
-                            marginRight: "8px",
-                          }}
-                        ></span>
-                        {user}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
+                      ></span>
+                      {user}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
-      </nav>
-
+      </div>
+    </nav>
       {/* 🔹 Main Section */}
       <div style={{ padding: "20px" }}>
         <h2>Rooms Dashboard</h2>

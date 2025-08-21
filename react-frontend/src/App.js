@@ -9,7 +9,9 @@ import OTPPage2 from "./components/OTPPage2";
 import PasswordResetting from "./components/PasswordResetting";
 import RoomsDashboard from "./components/RoomsDashboard";
 import RealTimeChattingDashboard from "./components/RealTimeChattingDashboard"
-
+import OnetoOneChat from "./components/OnetoOneChat"
+import OnetoOneChatDashboard from "./components/OnetoOneChatDashboard"
+import Fucking from "./components/Fucking"
 
 const AuthContext = createContext();
 
@@ -76,6 +78,16 @@ function App() {
           />
 
           <Route
+            path="/fucking"
+            element={
+              <ProtectedRoute>
+                <Fucking />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
             path="/rooms-dashboard"
             element={
               <ProtectedRoute>
@@ -89,6 +101,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <RealTimeChattingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/onetoone"
+            element={
+              <ProtectedRoute>
+                <OnetoOneChat />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/oneonechatting"
+            element={
+              <ProtectedRoute>
+                <OnetoOneChatDashboard />
               </ProtectedRoute>
             }
           />
