@@ -19,6 +19,7 @@ class GroupMessage(models.Model):
     def __str__(self):
         return f'{self.author.username}: {self.body}'
 
+
 class ConnectedFriendsChat(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     body = models.CharField(max_length=1200)
