@@ -2,7 +2,9 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import AccessToken
+from urllib.parse import parse_qs
 import json
+
 
 User = get_user_model()
 
@@ -12,7 +14,6 @@ connected_users = {}
 class OneToOneChattingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         query_string = self.scope["query_string"].decode()
-        from urllib.parse import parse_qs
         params = parse_qs(query_string)
         token = params.get("token", [None])[0]
         self.chat_with = params.get("to", [None])[0]
@@ -31,11 +32,9 @@ class OneToOneChattingConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
         connected_users[self.username] = self
-        print(f"{self.username} connected to chat with {self.chat_with}")
 
     async def disconnect(self, close_code):
         connected_users.pop(self.username, None)
-        print(f"{self.username} disconnected")
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)

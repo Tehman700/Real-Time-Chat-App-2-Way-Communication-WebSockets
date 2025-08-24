@@ -5,7 +5,6 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import AccessToken
 
 User = get_user_model()
-
 ONLINE_USERS = set()
 
 class NotificationConsumer(AsyncJsonWebsocketConsumer):
@@ -37,9 +36,6 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def notify(self, event):
         await self.send_json(event["data"])
 
-
-
-
 class PresenceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Get token from query string
@@ -56,7 +52,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add("online_users", self.channel_name)
         await self.accept()
 
-        # Notify all users
+        # This is where it will notify all users
         await self.channel_layer.group_send(
             "online_users",
             {
@@ -72,7 +68,7 @@ class PresenceConsumer(AsyncWebsocketConsumer):
 
         await self.channel_layer.group_discard("online_users", self.channel_name)
 
-        # Notify others
+        # So that we can sww
         await self.channel_layer.group_send(
             "online_users",
             {
