@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../App"; // Import the useAuth hook
@@ -8,6 +8,7 @@ export default function LoginPage() {
   const { login } = useAuth(); // Get login function from context
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const ws = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,10 +25,6 @@ export default function LoginPage() {
       if (isSuccess && response.data.data?.tokens?.access){
         localStorage.setItem("token", response.data.data.tokens.access);
           localStorage.setItem("username", username);
-
-
-
-
         login();
         alert("Login Success");
 

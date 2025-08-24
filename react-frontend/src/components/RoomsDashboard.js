@@ -16,25 +16,6 @@ export default function RoomsDashboard() {
     profilePic: null
   });
 
-// This is only for user online checking
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No JWT token found. Please login first.");
-      return;
-    }
-
-    const ws = new WebSocket(`ws://localhost:8000/ws/online-users/?token=${token}`);
-
-    ws.onopen = () => console.log("Connected to websocket");
-    ws.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      setOnlineUsers(data.online_users);
-    };
-    ws.onclose = () => console.log("Disconnected");
-
-    return () => ws.close();
-  }, []);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -185,86 +166,6 @@ return (
           <span style={{ fontWeight: "600", fontSize: "16px" }}>
             {username || "User"}
           </span>
-        </div>
-
-        {/* 🔹 Online Users Dropdown */}
-        <div style={{ position: "relative" }}>
-          <div
-            style={{
-              cursor: "pointer",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              background: "#3b82f6",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "18px",
-              fontWeight: "bold",
-            }}
-            onClick={() => setShowDropdown((prev) => !prev)}
-          >
-            👤
-          </div>
-
-          {showDropdown && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                marginTop: "10px",
-                width: "220px",
-                background: "white",
-                borderRadius: "10px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                padding: "10px",
-                zIndex: 10,
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "14px",
-                  marginBottom: "10px",
-                  fontWeight: "600",
-                  color: "#333",
-                }}
-              >
-                Online Users
-              </h3>
-              {onlineUsers.length === 0 ? (
-                <p style={{ fontSize: "13px", color: "#666" }}>
-                  No users online
-                </p>
-              ) : (
-                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {onlineUsers.map((user, idx) => (
-                    <li
-                      key={idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "5px 0",
-                        fontSize: "14px",
-                        color: "#444",
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: "green",
-                          display: "inline-block",
-                          marginRight: "8px",
-                        }}
-                      ></span>
-                      {user}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </nav>

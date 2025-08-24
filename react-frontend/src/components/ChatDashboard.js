@@ -8,12 +8,17 @@ export default function ChatDashboard() {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [friendStatuses, setFriendStatuses] = useState({});
   const [email, setEmail] = useState("");
 
+  // WebSocket refs
+  const onlineUsersWs = useRef(null);
+  const notificationsWs = useRef(null);
 
   // Profile state
   const [userProfile, setUserProfile] = useState({
@@ -26,145 +31,43 @@ export default function ChatDashboard() {
   const [tempProfile, setTempProfile] = useState({});
   const fileInputRef = useRef(null);
 
-  // Get logged-in username
+  // Initialize WebSocket connections
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) {
-      setUsername(storedUsername);
-      // Load user profile from localStorage or set defaults
-      const savedProfile = localStorage.getItem(`userProfile_${storedUsername}`);
-      if (savedProfile) {
-        setUserProfile(JSON.parse(savedProfile));
-      } else {
-        setUserProfile({
-          username: storedUsername,
-          email: "",
-          description: "No description added yet.",
-          profilePic: null
-        });
-      }
-    }
-  }, []);
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  // Save profile to localStorage whenever it changes
-  useEffect(() => {
-    if (username && userProfile.username) {
-      localStorage.setItem(`userProfile_${username}`, JSON.stringify(userProfile));
-    }
-  }, [userProfile, username]);
+    // Online Users WebSocket
+    onlineUsersWs.current = new WebSocket(`ws://127.0.0.1:8000/ws/online-users/?token=${token}`);
 
-  useEffect(() => {
-    const fetchEmail = async () => {
-      try {
-        const token = localStorage.getItem("token"); // JWT from login
-        const response = await axios.get("http://127.0.0.1:8000/api/email_fetcher/", {
-          headers: {
-            Authorization: `Bearer ${token}`, // send JWT for authentication
-          },
-        });
+    onlineUsersWs.current.onopen = () => {
+      console.log("✅ Online Users WebSocket connected");
+    };
 
-        setEmail(response.data.data.email);
-      } catch (error) {
-        console.error("Error fetching email:", error);
+    onlineUsersWs.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📡 Online users update:", data);
+
+      if (data.data) {
+        setOnlineUsers(data.data);
       }
     };
 
-    fetchEmail();
-  }, []); // runs once when component mounts
-
-
-
-  // Fetch all users from backend
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    axios
-      .get("http://127.0.0.1:8000/api/listusername/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((response) => {
-        setUsers(response.data.data || []);
-      })
-      .catch((error) => {
-        console.error("Error fetching users:", error);
-      });
-  }, []);
-
-  useEffect(() => {
-    const savedStatuses = localStorage.getItem('friendStatuses');
-    if (savedStatuses) {
-      setFriendStatuses(JSON.parse(savedStatuses));
-    }
-  }, []);
-
-  // Save friend statuses to localStorage whenever they change
-  useEffect(() => {
-    if (Object.keys(friendStatuses).length > 0) {
-      localStorage.setItem('friendStatuses', JSON.stringify(friendStatuses));
-    }
-  }, [friendStatuses]);
-
-  // Fetch friend statuses
-  useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications');
-    if (savedNotifications) {
-      setNotifications(JSON.parse(savedNotifications));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('notifications', JSON.stringify(notifications));
-  }, [notifications]);
-
-  // Add this useEffect to refresh data from server periodically
-  useEffect(() => {
-    if (username) {
-      // Refresh friend statuses from server
-      const token = localStorage.getItem("token");
-      axios
-        .get("http://127.0.0.1:8000/api/friend-status/", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((response) => {
-          setFriendStatuses(response.data || {});
-        })
-        .catch((error) => {
-          console.error("Error syncing friend statuses:", error);
-        });
-    }
-  }, [username]);
-
-  useEffect(() => {
-    if (users.length > 0) {
-      const token = localStorage.getItem("token");
-      axios
-        .get("http://127.0.0.1:8000/api/friend-status/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((response) => {
-          setFriendStatuses(response.data || {});
-        })
-        .catch((error) => {
-          console.error("Error fetching friend statuses:", error);
-        });
-    }
-  }, [users]);
-
-  // WebSocket for notifications
-  useEffect(() => {
-    if (!username) return;
-
-    const token = localStorage.getItem("token");
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/?token=${token}`);
-
-    socket.onopen = () => {
-      console.log("✅ WebSocket connected");
+    onlineUsersWs.current.onclose = () => {
+      console.log("❌ Online Users WebSocket disconnected");
     };
 
-    socket.onmessage = (event) => {
+    onlineUsersWs.current.onerror = (error) => {
+      console.error("❌ Online Users WebSocket error:", error);
+    };
+
+    // Notifications WebSocket
+    notificationsWs.current = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/?token=${token}`);
+
+    notificationsWs.current.onopen = () => {
+      console.log("✅ Notifications WebSocket connected");
+    };
+
+    notificationsWs.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("📩 Notification received:", data);
 
@@ -193,15 +96,124 @@ export default function ChatDashboard() {
       }
     };
 
-    socket.onerror = (error) => {
-      alert("Websocket Error", error);
+    notificationsWs.current.onerror = (error) => {
+      console.error("❌ Notifications WebSocket error:", error);
     };
 
-    const connectedFriends = Object.entries(friendStatuses)
-      .filter(([username, status]) => status === 'connected')
-      .map(([username]) => username);
+    // Cleanup WebSockets on component unmount
+    return () => {
+      if (onlineUsersWs.current && onlineUsersWs.current.readyState === WebSocket.OPEN) {
+        onlineUsersWs.current.close();
+      }
+      if (notificationsWs.current && notificationsWs.current.readyState === WebSocket.OPEN) {
+        notificationsWs.current.close();
+      }
+    };
+  }, []);
 
-    return () => socket.close();
+  // Get logged-in username
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+      const savedProfile = localStorage.getItem(`userProfile_${storedUsername}`);
+      if (savedProfile) {
+        setUserProfile(JSON.parse(savedProfile));
+      } else {
+        setUserProfile({
+          username: storedUsername,
+          email: "",
+          description: "No description added yet.",
+          profilePic: null
+        });
+      }
+    }
+  }, []);
+
+  // Save profile to localStorage whenever it changes
+  useEffect(() => {
+    if (username && userProfile.username) {
+      localStorage.setItem(`userProfile_${username}`, JSON.stringify(userProfile));
+    }
+  }, [userProfile, username]);
+
+  // Fetch email
+  useEffect(() => {
+    const fetchEmail = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://127.0.0.1:8000/api/email_fetcher/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setEmail(response.data.data.email);
+      } catch (error) {
+        console.error("Error fetching email:", error);
+      }
+    };
+
+    fetchEmail();
+  }, []);
+
+  // Fetch all users from backend
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    axios
+      .get("http://127.0.0.1:8000/api/listusername/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((response) => {
+        setUsers(response.data.data || []);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+      });
+  }, []);
+
+  // Load and save friend statuses
+  useEffect(() => {
+    const savedStatuses = localStorage.getItem('friendStatuses');
+    if (savedStatuses) {
+      setFriendStatuses(JSON.parse(savedStatuses));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (Object.keys(friendStatuses).length > 0) {
+      localStorage.setItem('friendStatuses', JSON.stringify(friendStatuses));
+    }
+  }, [friendStatuses]);
+
+  // Load and save notifications
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notifications');
+    if (savedNotifications) {
+      setNotifications(JSON.parse(savedNotifications));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  // Sync friend statuses with server
+  useEffect(() => {
+    if (username) {
+      const token = localStorage.getItem("token");
+      axios
+        .get("http://127.0.0.1:8000/api/friend-status/", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+          setFriendStatuses(response.data || {});
+        })
+        .catch((error) => {
+          console.error("Error syncing friend statuses:", error);
+        });
+    }
   }, [username]);
 
   // Profile picture handling
@@ -212,7 +224,7 @@ export default function ChatDashboard() {
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         alert("File size should be less than 5MB");
         return;
       }
@@ -358,14 +370,44 @@ export default function ChatDashboard() {
   };
 
   const handleLogout = () => {
+    // Close WebSocket connections before logout
+    if (onlineUsersWs.current && onlineUsersWs.current.readyState === WebSocket.OPEN) {
+      onlineUsersWs.current.close();
+    }
+    if (notificationsWs.current && notificationsWs.current.readyState === WebSocket.OPEN) {
+      notificationsWs.current.close();
+    }
+
     logout();
     localStorage.removeItem("username");
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  const JoinRoom = async () => {
-    navigate("/rooms-dashboard")
+  const JoinRoom = () => {
+    navigate("/rooms-dashboard");
+  };
+
+  const toggleDropdown = (dropdown) => {
+    switch (dropdown) {
+      case 'notifications':
+        setShowNotifications(!showNotifications);
+        setShowUsers(false);
+        setShowOnlineUsers(false);
+        break;
+      case 'users':
+        setShowUsers(!showUsers);
+        setShowNotifications(false);
+        setShowOnlineUsers(false);
+        break;
+      case 'onlineUsers':
+        setShowOnlineUsers(!showOnlineUsers);
+        setShowUsers(false);
+        setShowNotifications(false);
+        break;
+      default:
+        break;
+    }
   };
 
   const currentProfile = isEditingProfile ? tempProfile : userProfile;
@@ -399,13 +441,116 @@ export default function ChatDashboard() {
         </h2>
 
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+          {/* Online Users Button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => toggleDropdown('onlineUsers')}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "5px"
+              }}
+            >
+              🟢 Online ({onlineUsers.length})
+            </button>
+
+            {showOnlineUsers && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "40px",
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                  padding: "10px",
+                  minWidth: "300px",
+                  zIndex: 10,
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                }}
+              >
+                <p style={{ margin: "0 0 10px", fontWeight: "bold" }}>
+                  🟢 Online Users ({onlineUsers.length})
+                </p>
+                {onlineUsers.length === 0 ? (
+                  <div style={{
+                    textAlign: "center",
+                    padding: "20px",
+                    color: "#666",
+                    fontStyle: "italic"
+                  }}>
+                    No users currently online
+                  </div>
+                ) : (
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {onlineUsers.map((user, index) => (
+                      <li
+                        key={index}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "10px",
+                          borderBottom: "1px solid #eee",
+                          marginBottom: "5px",
+                          backgroundColor: user === username ? "#e7f3ff" : "#f9f9f9",
+                          borderRadius: "4px"
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              backgroundColor: "#28a745",
+                              borderRadius: "50%",
+                              animation: "pulse 2s infinite"
+                            }}
+                          />
+                          <span style={{ fontWeight: "500", fontSize: "14px" }}>
+                            {user} {user === username && "(You)"}
+                          </span>
+                        </div>
+                        {user !== username && (
+                          <button
+                            onClick={() => {
+                              // Add chat functionality here
+                              alert(`Starting chat with ${user}`);
+                            }}
+                            style={{
+                              padding: "4px 8px",
+                              backgroundColor: "#007bff",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "3px",
+                              fontSize: "12px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            💬 Chat
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Notifications Bell Icon */}
           <div
             style={{ position: "relative", cursor: "pointer", fontSize: "20px" }}
-            onClick={() => {
-              setShowNotifications(!showNotifications);
-              setShowUsers(false); // Close users dropdown
-            }}
+            onClick={() => toggleDropdown('notifications')}
           >
             🔔
             {notifications.length > 0 && (
@@ -519,13 +664,10 @@ export default function ChatDashboard() {
             )}
           </div>
 
-          {/* Users Button */}
+          {/* All Users Button */}
           <div style={{ position: "relative" }}>
             <button
-              onClick={() => {
-                setShowUsers(!showUsers);
-                setShowNotifications(false); // Close notifications dropdown
-              }}
+              onClick={() => toggleDropdown('users')}
               style={{
                 padding: "8px 16px",
                 backgroundColor: "#17a2b8",
@@ -536,7 +678,7 @@ export default function ChatDashboard() {
                 fontSize: "14px",
               }}
             >
-              👥 Users
+              All Users ({users.length})
             </button>
 
             {showUsers && (
@@ -564,15 +706,16 @@ export default function ChatDashboard() {
                 ) : (
                   <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {users
-                    .filter((user) => {
+                      .filter((user) => {
                         const userUsername = typeof user === 'string' ? user : user.username;
-                        const adminUsernames = ['admin', 'administrator', 'root', 'superuser']; // Add more admin usernames as needed
+                        const adminUsernames = ['admin', 'administrator', 'root', 'superuser'];
                         return userUsername !== username && !adminUsernames.includes(userUsername.toLowerCase());
                       })
                       .map((user, index) => {
                         const userUsername = typeof user === 'string' ? user : user.username;
                         const userId = typeof user === 'string' ? null : user.id;
                         const buttonConfig = getButtonConfig(userUsername);
+                        const isOnline = onlineUsers.includes(userUsername);
 
                         return (
                           <li
@@ -584,11 +727,32 @@ export default function ChatDashboard() {
                               padding: "8px",
                               borderBottom: "1px solid #eee",
                               marginBottom: "5px",
+                              backgroundColor: isOnline ? "#f0fff4" : "#fff"
                             }}
                           >
-                            <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              {isOnline && (
+                                <div
+                                  style={{
+                                    width: "8px",
+                                    height: "8px",
+                                    backgroundColor: "#28a745",
+                                    borderRadius: "50%"
+                                  }}
+                                />
+                              )}
                               <span style={{ fontWeight: "500", fontSize: "14px" }}>
                                 {userUsername}
+                                {isOnline && (
+                                  <span style={{
+                                    marginLeft: "5px",
+                                    fontSize: "10px",
+                                    color: "#28a745",
+                                    fontWeight: "bold"
+                                  }}>
+                                    • Online
+                                  </span>
+                                )}
                               </span>
                               {friendStatuses[userUsername] === "connected" && (
                                 <span style={{
@@ -623,6 +787,22 @@ export default function ChatDashboard() {
             )}
           </div>
 
+          {/* Join Room Button */}
+          <button
+            onClick={JoinRoom}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#6f42c1",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px"
+            }}
+          >
+            Join Room
+          </button>
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}
@@ -637,16 +817,60 @@ export default function ChatDashboard() {
           >
             Logout
           </button>
+        </div>
+      </div>
 
-          <button onClick={JoinRoom}
-           style={{
-              padding: "8px 16px",
-              backgroundColor: "#dc3545",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}>Join Room</button>
+      {/* Stats Cards */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: "20px",
+        marginBottom: "30px"
+      }}>
+        <div style={{
+          backgroundColor: "#fff",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          textAlign: "center"
+        }}>
+          <h3 style={{ margin: "0 0 10px 0", color: "#17a2b8" }}>Total Users</h3>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>{users.length}</p>
+        </div>
+
+        <div style={{
+          backgroundColor: "#fff",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          textAlign: "center"
+        }}>
+          <h3 style={{ margin: "0 0 10px 0", color: "#28a745" }}>Online Now</h3>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>{onlineUsers.length}</p>
+        </div>
+
+        <div style={{
+          backgroundColor: "#fff",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          textAlign: "center"
+        }}>
+          <h3 style={{ margin: "0 0 10px 0", color: "#ffc107" }}>Notifications</h3>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>{notifications.length}</p>
+        </div>
+
+        <div style={{
+          backgroundColor: "#fff",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          textAlign: "center"
+        }}>
+          <h3 style={{ margin: "0 0 10px 0", color: "#007bff" }}>Friends</h3>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
+            {Object.values(friendStatuses).filter(status => status === 'connected').length}
+          </p>
         </div>
       </div>
 

@@ -7,6 +7,8 @@ from api.views.friend_requests_views import send_friend_request,respond_friend_r
 from api.views.chatting_views import ChatGroupAPIView, CreateChatGroupAPIView
 from api.views.list_usernames import LoggedInUserEmailAPIView
 
+
+
 urlpatterns = [
     path('register/', RegisterAPIView.as_view(), name='registering'),
     path('login/', LoginViewSet.as_view({'post': 'create'}), name='login'),
