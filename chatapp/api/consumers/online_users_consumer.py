@@ -47,15 +47,11 @@ class OnlineUsersConsumer(WebsocketConsumer):
             return
 
         self.accept()
-
-        # Broadcast updated online users list to all connected clients
         self.broadcast_online_users()
 
     def disconnect(self, close_code):
-        print(f"User {getattr(self, 'username', 'unknown')} disconnecting...")
 
         if hasattr(self, 'username') and self.username in USERS_ONLINE:
-            # Remove this specific channel from user's channel list
             if self.channel_name in USERS_ONLINE[self.username]:
                 USERS_ONLINE[self.username].remove(self.channel_name)
 
@@ -68,20 +64,14 @@ class OnlineUsersConsumer(WebsocketConsumer):
                 "online_users",
                 self.channel_name
             )
-
-            print(f"User {self.username} disconnected. Online users: {list(USERS_ONLINE.keys())}")
-
-            # Broadcast updated online users list to all remaining connected clients
             self.broadcast_online_users()
 
     def receive(self, text_data):
-        """Handle messages from client"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type', 'message')
 
             if message_type == 'heartbeat':
-                # Respond to heartbeat to keep connection alive
                 self.send(text_data=json.dumps({
                     'type': 'heartbeat_response',
                     'status': 'alive'
@@ -93,10 +83,7 @@ class OnlineUsersConsumer(WebsocketConsumer):
             print(f"Received non-JSON data from {getattr(self, 'username', 'unknown')}: {text_data}")
 
     def broadcast_online_users(self):
-        """Broadcast the current online users list to all connected clients"""
         online_usernames = list(USERS_ONLINE.keys())
-
-        # Send to all clients in the online_users group
         async_to_sync(self.channel_layer.group_send)(
             "online_users",
             {
@@ -106,23 +93,11 @@ class OnlineUsersConsumer(WebsocketConsumer):
         )
 
     def online_users_update(self, event):
-        """Handle broadcasting online users update to this specific client"""
         users = event["users"]
-
         self.send(text_data=json.dumps({
             'type': 'online_users_update',
             'status': 'connected to server',
             'data': users,
             'count': len(users),
-            'timestamp': json.dumps(None, default=str)  # You can add actual timestamp if needed
-        }))
-
-    # Additional method to handle custom events if needed
-    def send_notification(self, event):
-        """Handle sending notifications to specific users"""
-        notification = event["notification"]
-
-        self.send(text_data=json.dumps({
-            'type': 'notification',
-            'data': notification
+            'timestamp': json.dumps(None, default=str)
         }))
