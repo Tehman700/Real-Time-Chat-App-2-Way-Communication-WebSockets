@@ -6,6 +6,7 @@ from api.views.list_usernames import ListUsernameAPIView
 from api.views.friend_requests_views import send_friend_request,respond_friend_request
 from api.views.chatting_views import ChatGroupAPIView, CreateChatGroupAPIView
 from api.views.list_usernames import LoggedInUserEmailAPIView
+from api.views.saving_message_view import SaveMessageAPIView
 
 
 
@@ -24,4 +25,6 @@ urlpatterns = [
     path("friend-request/respond/<int:request_id>/", respond_friend_request),
     path('groups/', ChatGroupAPIView.as_view(), name="chat-groups"),
     path('create-group/', CreateChatGroupAPIView.as_view(), name="create-group"),
+    path('save-message/', SaveMessageAPIView.as_view(), name = "save-message")
+
 ]

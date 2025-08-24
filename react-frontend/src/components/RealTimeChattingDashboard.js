@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-
 export default function RealTimeChattingDashboard() {
   const [group, setGroup] = useState("");
   const [ws, setWs] = useState(null);
@@ -22,12 +21,43 @@ export default function RealTimeChattingDashboard() {
     if (storedUsername) setUsername(storedUsername);
   }, []);
 
+  // Fetch existing messages when component mounts or group changes
+  useEffect(() => {
+    if (!group) return;
+
+    const fetchMessages = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://127.0.0.1:8000/api/save-message/?group_name=${group}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+         // data will be dict, we have to pick specific message
+          const formattedMessages = data.map(msg => ({
+            text: msg.body,
+            sender: msg.author
+          }));
+          setMessages(formattedMessages);
+        }
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+
+    fetchMessages();
+  }, [group]);
+
   // WebSocket connection for real-time chatting
   useEffect(() => {
     if (!group) return;
 
     const token = localStorage.getItem("token"); // JWT token
-    // Group is basically room name
     const socket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${group}/?token=${token}`);
 
     socket.onopen = () => console.log("Connected to room", group);
@@ -38,25 +68,40 @@ export default function RealTimeChattingDashboard() {
       const data = JSON.parse(event.data);
 
       if (data.type === "chat") {
-        // Chat message received
         setMessages((prev) => [...prev, { text: data.message, sender: data.sender }]);
       } else if (data.type === "users") {
-        // Online users list
         setOnlineUsers(data.users);
       }
     };
-
     setWs(socket);
 
     return () => socket.close();
   }, [group]);
 
-const sendMessage = () => {
-  if (ws && message.trim() !== "") {
-    ws.send(JSON.stringify({ message }));
-    setMessage("");
-  }
-};
+  const sendMessage = () => {
+    if (ws && message.trim() !== "") {
+      ws.send(JSON.stringify({ message }));
+
+      try {
+        const token = localStorage.getItem("token");
+        fetch("http://127.0.0.1:8000/api/save-message/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            group_name: group,
+            body: message,
+          }),
+        });
+      } catch (err) {
+        console.error("Error sending message", err);
+      }
+
+      setMessage("");
+    }
+  };
 
   return (
     <div style={{ maxWidth: "700px", margin: "auto", padding: "20px" }}>
@@ -116,21 +161,21 @@ const sendMessage = () => {
               ) : (
                 <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                   {onlineUsers.map((user, idx) => (
-                        <li key={idx} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: "14px" }}>
-                          <span
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              backgroundColor: "limegreen", // dot color
-                              display: "inline-block",
-                              marginRight: "8px",
-                            }}
-                          ></span>
-                          <span style={{ color: user === username ? "#007bff" : "#555" }}>
-                            {user === username ? "You" : user}
-                          </span>
-                        </li>
+                    <li key={idx} style={{ display: "flex", alignItems: "center", padding: "4px 0", fontSize: "14px" }}>
+                      <span
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          backgroundColor: "limegreen", // dot color
+                          display: "inline-block",
+                          marginRight: "8px",
+                        }}
+                      ></span>
+                      <span style={{ color: user === username ? "#007bff" : "#555" }}>
+                        {user === username ? "You" : user}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               )}

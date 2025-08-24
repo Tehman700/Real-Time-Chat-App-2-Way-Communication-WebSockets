@@ -8,13 +8,12 @@ export default function RoomsDashboard() {
   const navigate = useNavigate();
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [username, setUsername] = useState("");
-
-
   const [showDropdown, setShowDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState({
     username: "",
     profilePic: null
   });
+
 
 
   useEffect(() => {
@@ -33,8 +32,6 @@ export default function RoomsDashboard() {
       }
     }
   }, []);
-
-
 
 
   useEffect(() => {
@@ -111,9 +108,6 @@ export default function RoomsDashboard() {
     const handleOneToOneChat = () => {
       navigate("/onetoone");
     };
-
-
-
 
 
 
