@@ -37,7 +37,6 @@ class ChattingConsumer(AsyncConsumer):
             self.channel_name
         )
 
-        # Accept WebSocket
         await self.send({"type": "websocket.accept"})
 
         # This is why we see Realtime updated user list
